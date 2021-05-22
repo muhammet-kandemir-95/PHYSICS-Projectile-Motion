@@ -1,0 +1,420 @@
+<html>
+
+<head>
+	<title>
+		Projectile Motion
+	</title>
+
+	<style>
+		html,
+		body {
+			margin: 0px;
+			padding: 0px;
+			width: 100%;
+		}
+
+		.map {
+			position: relative;
+			margin-top: 10px;
+			margin-left: 10px;
+			width: calc(100% - 20px);
+			height: calc(100% - 20px);
+			border: 1px solid rgb(133, 133, 133);
+			border-radius: 5px;
+			box-sizing: border-box;
+			overflow: auto;
+		}
+
+		.length-x {
+			position: absolute;
+			left: 10px;
+			bottom: 3px;
+			width: 0px;
+			height: 6px;
+			border-left: 3px solid rgb(41, 206, 0);
+			border-right: 3px solid rgb(41, 206, 0);
+			box-sizing: border-box;
+			transition-duration: 0.5s;
+		}
+
+		.length-x::before {
+			content: "";
+			display: block;
+			position: absolute;
+			left: 0px;
+			top: 0px;
+			width: 100%;
+			height: 2px;
+			background-color: rgb(41, 206, 0);
+		}
+
+		.length-y {
+			position: absolute;
+			left: 3px;
+			bottom: 10px;
+			width: 6px;
+			height: 0px;
+			border-top: 3px solid rgb(14, 0, 206);
+			border-bottom: 3px solid rgb(14, 0, 206);
+			box-sizing: border-box;
+			transition-duration: 0.5s;
+		}
+
+		.length-y::before {
+			content: "";
+			display: block;
+			position: absolute;
+			left: 4px;
+			top: 0px;
+			width: 2px;
+			height: 100%;
+			background-color: rgb(14, 0, 206);
+		}
+
+		.direction {
+			position: absolute;
+			left: 15px;
+			bottom: 15px;
+			width: 6px;
+			height: 2px;
+			background-color: blueviolet;
+			transform: translateY(1px) rotateZ(0deg);
+			transform-origin: 0% 50%;
+			transition-duration: 0.5s;
+		}
+
+		.ball,
+		.ball-x,
+		.ball-y {
+			position: absolute;
+			z-index: 1;
+			left: 0px;
+			bottom: 0px;
+			margin-left: 10px;
+			margin-bottom: 10px;
+			width: 9px;
+			height: 9px;
+			border-radius: 100%;
+			border: 1px solid #000;
+			background-color: rgb(226, 43, 89);
+		}
+
+		.ball-x {
+			background-color: rgb(41, 206, 0);
+		}
+
+		.ball-y {
+			background-color: rgb(14, 0, 206);
+		}
+
+		.dot {
+			position: absolute;
+			width: 2px;
+			height: 2px;
+			margin-left: 14px;
+			margin-bottom: 14px;
+			background-color: #000;
+		}
+
+		.line-x {
+			position: absolute;
+			left: 0px;
+			bottom: 0px;
+			width: 0px;
+			height: 1px;
+			margin-left: 10px;
+			margin-bottom: 15px;
+			background-color: rgb(14, 0, 206);
+		}
+
+		.line-y {
+			position: absolute;
+			left: 0px;
+			bottom: 0px;
+			width: 1px;
+			height: 0px;
+			margin-left: 15px;
+			margin-bottom: 10px;
+			background-color: rgb(41, 206, 0);
+		}
+
+		.labels {
+			position: fixed;
+			left: 25px;
+			top: 25px;
+			z-index: 2;
+			width: calc(100% - 50px);
+			height: 100px;
+		}
+
+		.label {
+			display: inline-block;
+			padding: 5px 10px;
+		}
+
+		.label:before {
+			content: attr(data-text);
+		}
+
+		.label input {
+			display: inline-block;
+			width: 75px;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="labels">
+		<div class="label">
+			Velocity (m/s) : <input type="number" class="velocity-input" />
+		</div>
+		<div class="label">
+			Gravity Acceleration (m/s^2) : <input type="number" class="gravity-acceleration-input" />
+		</div>
+		<div class="label">
+			Wind X Acceleration (m/s^2) : <input type="number" class="wind-x-acceleration-input" />
+		</div>
+		<div class="label">
+			Degree : <input type="number" class="degree-input" />
+		</div>
+		<div class="label">
+			Time Speed / Multiplier : <input type="number" class="time-speed-input" />
+		</div>
+		<br>
+		<div class="label">
+			<button class="restart">Restart</button>
+		</div>
+		<div class="label">
+			<button class="stop">Stop</button>
+		</div>
+		<div class="label">
+			<button class="resume">Resume</button>
+		</div>
+		<br>
+		<div class="label label-final-time" data-text="Final Time(s) : "></div>
+		<div class="label label-length-x" data-text="Length X(m) : "></div>
+		<div class="label label-length-y" data-text="Length Y(m) : "></div>
+		<br>
+		<div class="label label-position-x" data-text="Position X (m) : "></div>
+		<div class="label label-position-y" data-text="Position Y (m) : "></div>
+		<div class="label label-velocity" data-text="Velocity (m/s) : "></div>
+		<div class="label label-time" data-text="Time (s) : "><input type="number" class="time-input" value="0" /></div>
+	</div>
+	<div class="map">
+		<div class="direction"></div>
+		<div class="ball-x"></div>
+		<div class="ball-y"></div>
+		<div class="ball"></div>
+		<div class="length-y"></div>
+		<div class="length-x"></div>
+		<div class="line-y"></div>
+		<div class="line-x"></div>
+	</div>
+
+	<script>
+		var $ = function (selector) {
+			return document.querySelector(selector);
+		};
+
+		var finalTime = 0;
+		var finished = false;
+		var timeMs = 0;
+		var timer = null;
+		var timerDot = null;
+		var lastTimeout = null;
+		var $map = $('.map');
+		var $direction = $('.direction');
+		var $ball = $('.ball');
+		var $ballX = $('.ball-x');
+		var $ballY = $('.ball-y');
+		var $lengthX = $('.length-x');
+		var $lengthY = $('.length-y');
+		var $lineX = $('.line-x');
+		var $lineY = $('.line-y');
+		var $labelFinalTime = $('.label-final-time');
+		var $labelLengthX = $('.label-length-x');
+		var $labelLengthY = $('.label-length-y');
+		var $labelPositionX = $('.label-position-x');
+		var $labelPositionY = $('.label-position-y');
+		var $labelVelocity = $('.label-velocity');
+		var $labelTime = $('.label-time input');
+
+		var $inputVelocity = $('.velocity-input');
+		var $inputGravityAcceleration = $('.gravity-acceleration-input');
+		var $inputWindXAcceleration = $('.wind-x-acceleration-input');
+		var $inputDegree = $('.degree-input');
+		var $inputTimeSpeed = $('.time-speed-input');
+
+		var velocity = 90;
+		var degree = 37;
+		var gravityAcceleration = 9.81;
+		var windXAcceleration = 5.4;
+		var timeSpeed = 7;
+
+		$inputVelocity.value = velocity;
+		$inputDegree.value = degree;
+		$inputGravityAcceleration.value = gravityAcceleration;
+		$inputWindXAcceleration.value = windXAcceleration;
+		$inputTimeSpeed.value = timeSpeed;
+
+		var velocityXFunction = function (time) {
+			if (time < 0) {
+				return 0;
+			}
+
+			return velocity * Math.cos(degree * Math.PI / 180) - windXAcceleration * time;
+		};
+
+		var velocityYFunction = function (time) {
+			if (time < 0) {
+				return 0;
+			}
+
+			return velocity * Math.sin(degree * Math.PI / 180) - gravityAcceleration * time;
+		};
+
+		var displacementXFunction = function (time) {
+			if (time < 0) {
+				return 0;
+			}
+
+			return time * velocity * Math.cos(degree * Math.PI / 180) - 0.5 * windXAcceleration * time *
+				time;
+		};
+
+		var displacementYFunction = function (time) {
+			if (time < 0) {
+				return 0;
+			}
+
+			return time * velocity * Math.sin(degree * Math.PI / 180) - 0.5 * gravityAcceleration * time *
+				time;
+		};
+
+		function setCurrentByTime() {
+			var timeS = timeMs / 1000;
+			finished = false;
+			if (timeS >= finalTime) {
+				timeMs = finalTime * 1000;
+				finished = true;
+			}
+
+			var velX = velocityXFunction(timeS);
+			var velY = velocityYFunction(timeS);
+			$labelVelocity.innerText = Math.sqrt(velX * velX + velY *
+				velY).toFixed(4);
+			$labelTime.value = (timeS).toFixed(4);
+
+			var posX = displacementXFunction(timeS);
+			var posY = displacementYFunction(timeS);
+			$labelPositionX.innerText = posX.toFixed(2);
+			$labelPositionY.innerText = posY.toFixed(2);
+			$ball.style.left = posX + 'px';
+			$ballX.style.left = $ball.style.left;
+			$ball.style.bottom = posY + 'px';
+			$ballY.style.bottom = $ball.style.bottom;
+
+			$lineX.style.width = $ball.style.left;
+			$lineX.style.bottom = $ball.style.bottom;
+			$lineY.style.height = $ball.style.bottom;
+			$lineY.style.left = $ball.style.left;
+		}
+
+		function stop() {
+			clearInterval(timer);
+			clearInterval(timerDot);
+			clearTimeout(lastTimeout);
+		}
+
+		function restart() {
+			stop();
+
+			var previousDots = document.querySelectorAll('.dot');
+			for (let i = 0; i < previousDots.length; i++) {
+				previousDots[i].remove();
+			}
+			$ball.removeAttribute('style');
+			$ballX.removeAttribute('style');
+			$ballY.removeAttribute('style');
+			$lineX.removeAttribute('style');
+			$lineY.removeAttribute('style');
+			$lengthX.removeAttribute('style');
+			$lengthY.removeAttribute('style');
+			timeMs = 0;
+			$labelTime.value = timeMs;
+
+			resume();
+		}
+
+		function resume() {
+			windXAcceleration = parseFloat($inputWindXAcceleration.value);
+			gravityAcceleration = parseFloat($inputGravityAcceleration.value);
+			velocity = parseFloat($inputVelocity.value);
+			degree = parseFloat($inputDegree.value);
+			timeSpeed = parseFloat($inputTimeSpeed.value);
+			timeMs = parseFloat($labelTime.value) * 1000;
+
+			finalTime = (2 * velocity * Math.sin(degree * Math.PI / 180)) / gravityAcceleration;
+			setCurrentByTime();
+
+			lastTimeout = setTimeout(function () {
+
+				$labelFinalTime.innerText = finalTime.toFixed(4);
+
+				var lenX = displacementXFunction(finalTime);
+				var lenY = displacementYFunction(finalTime / 2);
+				$labelLengthX.innerText = lenX.toFixed(4);
+				$lengthX.style.width = lenX + 'px';
+				$labelLengthY.innerText = lenY.toFixed(4);
+				$lengthY.style.height = lenY + 'px';
+				$direction.style.width = velocity + 'px';
+				$direction.style.transform = 'translateY(1px) rotateZ(-' + degree + 'deg)';
+
+				lastTimeout = setTimeout(function () {
+					var dotTime = 0;
+					timerDot = setInterval(function () {
+						if (dotTime > finalTime) {
+							clearInterval(timerDot);
+
+							var $dot = document.createElement('div');
+							$dot.classList.add('dot');
+							$dot.style.left = displacementXFunction(finalTime) + 'px';
+							$dot.style.bottom = displacementYFunction(finalTime) + 'px';
+							$map.appendChild($dot);
+
+							timer = setInterval(function () {
+								setCurrentByTime();
+
+								if (finished) {
+									clearInterval(timer);
+								}
+								timeMs = Math.min(timeMs + 1 * timeSpeed, finalTime * 1000);
+							}, 1);
+						} else {
+							var $dot = document.createElement('div');
+							$dot.classList.add('dot');
+							$dot.style.left = displacementXFunction(dotTime) + 'px';
+							$dot.style.bottom = displacementYFunction(dotTime) + 'px';
+							$map.appendChild($dot);
+						}
+
+						dotTime += 20 * 10 / 1000;
+					}, 1);
+				}, 500);
+			}, 1000);
+		}
+		restart();
+
+		$('.restart').addEventListener('click', function (e) {
+			restart();
+		});
+		$('.stop').addEventListener('click', function (e) {
+			stop();
+		});
+		$('.resume').addEventListener('click', function (e) {
+			resume();
+		});
+	</script>
+</body>
+
+</html>
